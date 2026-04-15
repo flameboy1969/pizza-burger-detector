@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pizza vs Burger Detector</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --accent: #38bdf8;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --border: #243042;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(135deg, #020617, #0f172a 55%, #111827);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .wrap {
+      width: min(980px, 100%);
+      display: grid;
+      gap: 20px;
+      grid-template-columns: 1fr;
+    }
+    .hero, .panel {
+      background: rgba(17, 24, 39, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+    h1 { margin: 0 0 8px; font-size: 2rem; }
+    p { color: var(--muted); line-height: 1.6; }
+    .upload {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 16px;
+    }
+    input[type="file"] {
+      padding: 12px;
+      background: #0b1220;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--muted);
+      max-width: 100%;
+    }
+    button {
+      background: var(--accent);
+      color: #082f49;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .message {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #0b1220;
+      border: 1px solid var(--border);
+    }
+    .error { color: #fca5a5; }
+    .success { color: #86efac; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 20px;
+      align-items: start;
+    }
+    .image-box img {
+      width: 100%;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      display: block;
+    }
+    ul {
+      margin: 12px 0 0;
+      padding-left: 20px;
+    }
+    li { margin: 8px 0; color: var(--text); }
+    .tag {
+      display: inline-block;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    @media (max-width: 800px) {
+      .grid { grid-template-columns: 1fr; }
+      h1 { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Pizza vs Burger Detector</h1>
+      <p>Upload an image and the model will return the detected object with bounding boxes.</p>
+
+      <form class="upload" method="POST" enctype="multipart/form-data">
+        <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" required />
+        <button type="submit">Detect Object</button>
+      </form>
+
+      {% if error %}
+        <div class="message error">{{ error }}</div>
+      {% endif %}
+      {% if label_text %}
+        <div class="message success">{{ label_text }}</div>
+      {% endif %}
+    </section>
+
+    {% if result_image %}
+    <section class="panel grid">
+      <div class="image-box">
+        <img src="{{ result_image }}" alt="Detection result" />
+      </div>
+      <div>
+        <h2>Detection Summary</h2>
+        {% if detections and detections|length > 0 %}
+          <ul>
+            {% for item in detections %}
+              <li>{{ item.label }} — {{ item.confidence }}%</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No objects were detected in this image.</p>
+        {% endif %}
+        <span class="tag">Model: YOLOv8</span>
+      </div>
+    </section>
+    {% endif %}
+  </div>
+</body>
+</html>
