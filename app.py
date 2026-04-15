@@ -5,6 +5,7 @@ from pathlib import Path
 from flask import Flask, render_template, request, url_for
 from ultralytics import YOLO
 from werkzeug.utils import secure_filename
+import cv2
 
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_FOLDER = BASE_DIR / "static" / "uploads"
@@ -21,7 +22,9 @@ app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MB
 UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 RESULT_FOLDER.mkdir(parents=True, exist_ok=True)
 
+# Load model
 model = YOLO(str(MODEL_PATH))
+model.to("cpu")  # force CPU
 
 
 def allowed_file(filename: str) -> bool:
@@ -57,7 +60,13 @@ def index():
         upload_path = UPLOAD_FOLDER / filename
         file.save(upload_path)
 
-        results = model.predict(source=str(upload_path), conf=0.25, save=False, verbose=False)
+        # 🔥 Resize BEFORE inference (critical for memory)
+        img = cv2.imread(str(upload_path))
+        img = cv2.resize(img, (640, 640))
+        cv2.imwrite(str(upload_path), img)
+
+        # Run inference (lighter settings)
+        results = model.predict(source=str(upload_path), imgsz=416, conf=0.25, verbose=False)
         r = results[0]
 
         boxes = r.boxes
@@ -79,16 +88,11 @@ def index():
         else:
             label_text = "No objects detected."
 
+        # Save result image
         rendered = r.plot()
         result_name = f"result_{filename}"
         result_path = RESULT_FOLDER / result_name
-
-        try:
-            import cv2
-            cv2.imwrite(str(result_path), rendered)
-        except Exception:
-            from PIL import Image
-            Image.fromarray(rendered).save(result_path)
+        cv2.imwrite(str(result_path), rendered)
 
         result_image = url_for("static", filename=f"results/{result_name}")
 
@@ -99,8 +103,6 @@ def index():
 def health():
     return {"status": "ok"}
 
-
-import os
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
